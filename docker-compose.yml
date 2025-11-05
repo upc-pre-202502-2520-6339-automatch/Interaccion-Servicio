@@ -1,0 +1,40 @@
+services:
+  postgres_interactions:
+    image: postgres:15
+    container_name: postgres_interactions
+    restart: always
+    environment:
+      POSTGRES_DB: automatch_interactions
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_data_interactions:/var/lib/postgresql/data
+    networks:
+      - automatch-network
+
+  interactions-service:
+    build: .
+    container_name: interactions-service
+    depends_on:
+      - postgres_interactions
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_interactions:5432/automatch_interactions
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRINGDOC_API_DOCS_PATH: /v3/api-docs
+      SPRINGDOC_SWAGGER_UI_PATH: /swagger-ui.html
+    networks:
+      - automatch-network
+
+volumes:
+  postgres_data_interactions:
+
+networks:
+  automatch-network:
+    driver: bridge
