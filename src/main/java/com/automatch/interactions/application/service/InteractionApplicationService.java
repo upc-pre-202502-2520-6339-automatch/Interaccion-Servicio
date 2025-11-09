@@ -4,6 +4,7 @@ import com.automatch.interactions.application.dto.InteractionRequestDTO;
 import com.automatch.interactions.domain.model.Interaction;
 import com.automatch.interactions.domain.repository.InteractionRepository;
 import com.automatch.interactions.domain.service.InteractionDomainService;
+import com.automatch.interactions.infrastructure.messaging.kafka.producer.InteractionEventProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ public class InteractionApplicationService {
 
     private final InteractionRepository repository;
     private final InteractionDomainService domainService;
+    private final InteractionEventProducer eventProducer;
 
     @Transactional
     public Interaction register(InteractionRequestDTO dto) {
@@ -27,7 +29,12 @@ public class InteractionApplicationService {
                 .build();
 
         domainService.validateInteraction(interaction);
-        return repository.save(interaction);
+        Interaction saved = repository.save(interaction);
+
+        // SOLO enviar el evento desde el producer
+        eventProducer.publishInteractionCreated(saved);
+
+        return saved;
     }
 
     @Transactional(readOnly = true)
